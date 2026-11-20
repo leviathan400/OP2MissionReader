@@ -1,0 +1,4 @@
+# The same toolchain op2-rs pins (its crates are built as path dependencies).
+[toolchain]
+channel = "1.99"
+components = ["clippy"]

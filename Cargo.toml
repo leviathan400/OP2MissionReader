@@ -1,0 +1,56 @@
+[package]
+name = "op2dll"
+version = "0.4.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+description = "Outpost 2 mission DLL viewer and converter: runs a mission's setup in an x86 sandbox, draws its starting map, and rewrites it as OP2Lua"
+publish = false
+
+# The library (src/lib.rs): a mission's setup and pictures of its map, for other programs such as OP2Imager.
+[lib]
+name = "op2dll"
+path = "src/lib.rs"
+
+# The op2dll program needs the `app` feature (its window and its other commands).
+[[bin]]
+name = "op2dll"
+path = "src/main.rs"
+required-features = ["app"]
+
+[features]
+default = ["app"]
+app = ["dep:eframe", "dep:rfd", "dep:iced-x86", "dep:windows-sys"]
+
+[dependencies]
+# op2-rs (gitlab.com/bufke/op2-rs, GPL-3.0-or-later): its PE loader and x86 sandbox, the mission host that runs a
+# mission's InitProc. Pinned to a commit, as their APIs change; to try a local clone instead, see README.md.
+# The game-file readers are op2-formats from crates.io (op2-rs's crates still bring in their own, older copy).
+op2-formats = "0.6"
+op2-x86 = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }
+op2-missionhost = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }
+op2-settings = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }
+op2-sim = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }
+eframe = { version = "0.37", optional = true }
+rfd = { version = "0.17", optional = true }
+image = { version = "0.25", default-features = false, features = ["png", "ico", "jpeg", "bmp"] }
+anyhow = "1"
+iced-x86 = { version = "1.21", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console"], optional = true }
+
+# op2-rs's crates are slow unoptimized (the sandbox interprets x86); optimize dependencies even in dev builds.
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = "thin"
+
+# The exe's icon (assets/Tech_Planet.ico), embedded as a Windows resource by build.rs.
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
