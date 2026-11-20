@@ -260,8 +260,9 @@ Fixes to how missions run belong in op2-rs, upstream: op2-missionhost, by a merg
 
 It is a desktop program with no services. It is built locally with `cargo build --release`; the output is
 `target/release/op2dll.exe`. The source is on GitHub (leviathan400/OP2MissionReader); its CI
-(`.github/workflows/build.yml`) runs clippy and the tests and builds Windows and Linux binaries on every push. Builds are
-for Windows; everything used is meant to build on Linux and macOS too, but only Windows has been tried.
+(`.github/workflows/build.yml`) runs clippy and the tests and builds Windows and Linux binaries on every push. Both
+build and pass; the program has been run on Windows only. Nothing used is Windows-only, so macOS should build too,
+untried.
 
 ## 7. Security considerations
 
