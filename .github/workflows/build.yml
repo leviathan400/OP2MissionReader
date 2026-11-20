@@ -1,0 +1,51 @@
+name: Build
+
+# Builds OP2MissionReader (the op2dll program) for Windows and Linux on every push and pull request, runs the tests
+# and clippy, and keeps each build as a downloadable artifact (Actions > the run > Artifacts).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: windows-x64, os: windows-latest, exe: op2dll.exe }
+          # The oldest supported Ubuntu, so the program runs on older glibc.
+          - { name: linux-x64, os: ubuntu-22.04, exe: op2dll }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      # The window (eframe) and its file dialogs (rfd, GTK 3) need these headers on Linux.
+      - name: Linux packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libwayland-dev libxcb-render0-dev libxcb-shape0-dev \
+            libxcb-xfixes0-dev
+      # rust-toolchain.toml picks the toolchain (the one op2-rs pins); rustup installs it on first use.
+      - name: Toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --release --locked
+      - name: Build
+        run: cargo build --release --locked
+      - name: Package
+        run: |
+          pkg="OP2MissionReader-${{ matrix.name }}"
+          mkdir "$pkg"
+          cp "target/release/${{ matrix.exe }}" README.md CHANGELOG.md LICENSE "$pkg/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OP2MissionReader-${{ matrix.name }}
+          path: OP2MissionReader-${{ matrix.name }}
