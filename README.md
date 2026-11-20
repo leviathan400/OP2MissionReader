@@ -8,6 +8,11 @@ It doesn't contain any of the game's files: it reads the map, tilesets and art f
 with OPU 1.4.1 is what op2-rs is tested against). The mission's setup (`InitProc`) runs in op2-rs's x86 sandbox, not
 natively, so this works on any platform op2-rs builds on.
 
+**op2-missionhost is what makes this project possible.** It is op2-rs's mission host: it loads a mission DLL into
+op2-rs's x86 emulator (op2-x86) and answers the DLL's calls into the game (creating units, triggers, AI groups and the
+rest) the way Outpost 2 does, backed by op2-rs's simulation (op2-sim). Everything OP2MissionReader shows of a
+mission's setup, and everything it converts to Lua, comes from running the mission there.
+
 ## Using it
 
 ```
@@ -154,8 +159,25 @@ op2-sim = { path = "../op2-rs/tools/crates/op2-sim" }
 ```
 
 The drawing and setup code is also a library (`src/lib.rs`, crate `op2dll`) that other programs use without the
-window: OP2Imager (`../op2imager`) depends on it with `default-features = false`, which leaves out eframe and the
+window: [OP2Imager](https://github.com/leviathan400/OP2Imager) (`../op2imager`) depends on it with `default-features = false`, which leaves out eframe and the
 other windowing libraries; the `op2dll` program needs the `app` feature, on by default.
+
+## References
+
+- [op2-rs](https://gitlab.com/bufke/op2-rs) (GPL-3.0-or-later): the Outpost 2 reimplementation whose crates this
+  builds on.
+  - **op2-missionhost**: runs a mission DLL in the emulator and answers its game API calls; the core of this project.
+  - **op2-x86**: the PE loader and x86 emulator the DLL runs in.
+  - **op2-sim**: the game simulation behind the API (units, structures, terrain, the computer players' groups).
+  - **op2-settings**: the game folder op2-rs saved.
+- [op2-formats](https://crates.io/crates/op2-formats): reads the game's files (maps, tilesets, unit art, sheets,
+  `.vol` archives, `Outpost2.exe`'s tables).
+- [OP2Imager](https://github.com/leviathan400/OP2Imager): batch images of maps, mission DLLs, saved games and
+  OP2TestHarness states, using this project's library.
+- [OP2TestHarness](https://github.com/leviathan400/OP2TestHarness): runs missions in the real game and records what
+  they do; its states and whole-map images are what the exact drawing (`exact.rs`) is checked against.
+- [OP2Lua](https://github.com/leviathan400/OP2Lua): the Lua mission runtime that `op2dll lua` writes missions for.
+- [Outpost Universe](https://www.outpost2.net/): the Outpost 2 community and OPU, the game update this is tested with.
 
 ## Licence
 

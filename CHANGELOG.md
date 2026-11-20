@@ -7,6 +7,9 @@ Notable changes to OP2MissionReader (binary `op2dll`). The format follows [Keep 
 ### Added
 - Help > About OP2MissionReader: a window with a banner (`assets/banner.png`), the version, what the program does and
   the GitHub link.
+- The Windows exe's details (Properties > Details): OP2MissionReader, Outpost Universe, its copyright.
+- README: what op2-missionhost does for this project, and a References section.
+- CI on GitHub (`.github/workflows/build.yml`): clippy, the tests and Windows and Linux builds on every push.
 - `setup::from_parts` draws a running game's state from plain parts (`StateParts`: tiles, players, objects), so a
   saved game (OP2Imager) and a harness state (`from_state`, which now reads into those parts) take one path.
   `setup::type_name` gives a map id's code name, `setup::is_weapon_fire` tells a weapon's fire from a unit.
