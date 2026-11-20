@@ -26,6 +26,9 @@ app = ["dep:eframe", "dep:rfd", "dep:iced-x86", "dep:windows-sys"]
 # mission's InitProc. Pinned to a commit, as their APIs change; to try a local clone instead, see README.md.
 # The game-file readers are op2-formats from crates.io (op2-rs's crates still bring in their own, older copy).
 op2-formats = "0.6"
+# op2-rs's own op2-formats, only to tell its mission host the game folder (`setup::use_game_dir`): its
+# `default_game_dir` is a separate copy from ours, and without the folder the setup runs with no simulation.
+op2-formats-host = { package = "op2-formats", version = "0.4" }
 op2-x86 = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }
 op2-missionhost = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }
 op2-settings = { git = "https://gitlab.com/bufke/op2-rs", rev = "982336cf154f572bb38c1167eb19d939b29f737f" }

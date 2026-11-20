@@ -60,6 +60,10 @@ pub struct App {
     show_browser: bool,
     show_objectives: bool,
     show_research: bool,
+    /// Help > About, a window of its own.
+    show_about: bool,
+    /// The About window's banner, loaded the first time it opens.
+    about_banner: Option<egui::TextureHandle>,
     /// Outline the triggers' areas on the map.
     show_areas: bool,
     /// The trigger picked in the objectives window (its id).
@@ -160,6 +164,8 @@ impl App {
             show_browser: true,
             show_objectives: false,
             show_research: false,
+            show_about: false,
+            about_banner: None,
             show_areas: false,
             selected_trigger: None,
             research_player: 0,
@@ -197,7 +203,7 @@ impl App {
             }
         };
         let name = path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
-        ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!("op2dll - {name}")));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!("OP2MissionReader - {name}")));
         let (map, map_problems) = match (&report.desc, &self.game_dir) {
             (Some(desc), Some(dir)) if !desc.map_name.is_empty() => load_map(ctx, dir, &desc.map_name),
             (Some(_), None) => (None, vec!["no game folder, so no map (File > Set game folder)".into()]),
@@ -273,7 +279,7 @@ impl App {
 
     /// Uses `dir` as the game folder (op2-formats reads from it too), rescans it and reloads the open mission.
     fn set_game_dir(&mut self, ctx: &egui::Context, dir: PathBuf) {
-        op2_formats::set_game_dir(dir.clone());
+        crate::setup::use_game_dir(&dir);
         self.browser.scan(ctx, &dir);
         self.game_dir = Some(dir);
         (self.art, self.art_error) = (None, None);
@@ -338,7 +344,7 @@ impl App {
         });
     }
 
-    /// The File and View menus.
+    /// The File, View and Help menus.
     fn menu(&mut self, ui: &mut egui::Ui) -> Option<Action> {
         let mut action = None;
         let has_map = self.mission.as_ref().is_some_and(|m| m.map.is_some());
@@ -402,6 +408,12 @@ impl App {
                     }
                 } else {
                     ui.label("Open a mission first");
+                }
+            });
+            ui.menu_button("Help", |ui| {
+                if ui.button("About OP2MissionReader").clicked() {
+                    self.show_about = true;
+                    ui.close();
                 }
             });
         });
@@ -718,7 +730,7 @@ impl App {
     fn browser_window(&mut self, ctx: &egui::Context) -> Option<Action> {
         // First shown to the left of the main window, where there's room, else over its left edge.
         let main = ctx.input(|i| i.viewport().outer_rect);
-        let mut builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("op2dll - Missions").with_inner_size([380.0, 760.0]);
+        let mut builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("OP2MissionReader - Missions").with_inner_size([380.0, 760.0]);
         if let Some(r) = main {
             builder = builder.with_position(egui::pos2((r.min.x - 390.0).max(0.0), r.min.y));
         }
@@ -735,7 +747,7 @@ impl App {
 
     /// View > Objectives and triggers, a window of its own; closing it unticks the menu item.
     fn objectives_window(&mut self, ctx: &egui::Context) -> Option<Action> {
-        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("op2dll - Objectives and triggers").with_inner_size([760.0, 640.0]);
+        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("OP2MissionReader - Objectives and triggers").with_inner_size([760.0, 640.0]);
         let (setup, selected) = (self.mission.as_ref().and_then(|m| m.setup()), self.selected_trigger);
         let show_areas = &mut self.show_areas;
         let mut close = false;
@@ -757,7 +769,7 @@ impl App {
 
     /// View > AI groups, a window of its own.
     fn groups_window(&mut self, ctx: &egui::Context) -> Option<Action> {
-        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("op2dll - AI groups").with_inner_size([620.0, 700.0]);
+        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("OP2MissionReader - AI groups").with_inner_size([620.0, 700.0]);
         let mission = self.mission.as_ref();
         let (setup, selected) = (mission.and_then(|m| m.setup()), self.selected_group);
         let all_plans = &mut self.all_plans;
@@ -784,7 +796,7 @@ impl App {
     /// View > Disasters and timers, a window of its own. Starts the forecast for the open mission when there's none for
     /// it (or for the length chosen).
     fn disasters_window(&mut self, ctx: &egui::Context) -> Option<Action> {
-        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("op2dll - Disasters and timers").with_inner_size([760.0, 640.0]);
+        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("OP2MissionReader - Disasters and timers").with_inner_size([760.0, 640.0]);
         let mission = self.mission.as_ref();
         let key = mission.and_then(|m| Some((m.report.file.clone(), m.setup.as_ref()?.0, self.forecast_marks)));
         if let Some(key) = key.filter(|k| self.forecast.as_ref().is_none_or(|j| &j.key != k)) {
@@ -813,7 +825,7 @@ impl App {
     /// View > Messages, a window of its own. Reads and replays the open mission when there's no report for it (or for
     /// the length chosen).
     fn messages_window(&mut self, ctx: &egui::Context) -> Option<Action> {
-        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("op2dll - Messages").with_inner_size([760.0, 640.0]);
+        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("OP2MissionReader - Messages").with_inner_size([760.0, 640.0]);
         let mission = self.mission.as_ref();
         let key = mission.and_then(|m| Some((m.report.file.clone(), m.setup.as_ref()?.0, self.forecast_marks)));
         if let Some(key) = key.filter(|k| self.messages.as_ref().is_none_or(|j| &j.key != k)) {
@@ -832,7 +844,7 @@ impl App {
 
     /// View > Research, a window of its own.
     fn research_window(&mut self, ctx: &egui::Context) {
-        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("op2dll - Research").with_inner_size([420.0, 640.0]);
+        let builder = egui::ViewportBuilder::default().with_icon(icon()).with_title("OP2MissionReader - Research").with_inner_size([420.0, 640.0]);
         let mission = self.mission.as_ref();
         let setup = mission.and_then(|m| m.setup());
         let techtree = mission.and_then(|m| m.report.desc.as_ref()).map(|d| d.techtree_name.clone()).unwrap_or_default();
@@ -848,6 +860,54 @@ impl App {
             });
         });
         self.show_research &= !close;
+    }
+
+    /// Help > About, a small window of its own: the banner, the name and version, what it does and where it lives.
+    fn about_window(&mut self, ctx: &egui::Context) {
+        let builder = egui::ViewportBuilder::default()
+            .with_icon(icon())
+            .with_title("About OP2MissionReader")
+            .with_inner_size([660.0, 400.0])
+            .with_resizable(false);
+        let banner = self
+            .about_banner
+            .get_or_insert_with(|| {
+                let image = image::load_from_memory_with_format(include_bytes!("../assets/banner.png"), image::ImageFormat::Png)
+                    .map(|i| i.into_rgba8())
+                    .unwrap_or_default();
+                let size = [image.width() as usize, image.height() as usize];
+                ctx.load_texture("about-banner", egui::ColorImage::from_rgba_unmultiplied(size, &image), egui::TextureOptions::LINEAR)
+            })
+            .clone();
+        let mut close = false;
+        ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("about"), builder, |ui, _| {
+            close = ui.input(|i| i.viewport().close_requested() || i.key_pressed(egui::Key::Escape));
+            egui::CentralPanel::default().show(ui, |ui| {
+                ui.add_space(8.0);
+                ui.vertical_centered(|ui| {
+                    ui.add(egui::Image::new(&banner).fit_to_exact_size(vec2(620.0, 100.0)));
+                });
+                ui.add_space(16.0);
+                ui.indent("about", |ui| {
+                    ui.label(RichText::new("OP2MissionReader").size(22.0).strong());
+                    ui.add_space(4.0);
+                    ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+                    ui.add_space(8.0);
+                    ui.label(
+                        "Opens Outpost 2 mission DLLs: runs each mission's setup, shows its map with every unit, structure                          and beacon, and rewrites it as OP2Lua.",
+                    );
+                    ui.add_space(16.0);
+                    ui.label(RichText::new("Outpost Universe © 2026").weak());
+                    ui.hyperlink("https://github.com/leviathan400/OP2MissionReader");
+                });
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Max), |ui| {
+                    if ui.add(egui::Button::new("OK").min_size(vec2(90.0, 28.0))).clicked() {
+                        close = true;
+                    }
+                });
+            });
+        });
+        self.show_about &= !close;
     }
 
     /// Keys that work whenever no text field has the keyboard.
@@ -976,6 +1036,9 @@ impl eframe::App for App {
         if self.show_research {
             self.research_window(&ctx);
         }
+        if self.show_about {
+            self.about_window(&ctx);
+        }
         if self.show_groups {
             actions.extend(self.groups_window(&ctx));
         }
@@ -1095,5 +1158,12 @@ mod tests {
     fn icon_decodes() {
         let icon = super::icon();
         assert!(icon.width > 0 && icon.rgba.len() == (icon.width * icon.height * 4) as usize);
+    }
+
+    /// The About window's embedded banner decodes (it falls back to an empty image silently).
+    #[test]
+    fn banner_decodes() {
+        let banner = image::load_from_memory_with_format(include_bytes!("../assets/banner.png"), image::ImageFormat::Png).unwrap();
+        assert_eq!((banner.width(), banner.height()), (620, 100));
     }
 }

@@ -5,13 +5,18 @@ Notable changes to OP2MissionReader (binary `op2dll`). The format follows [Keep 
 ## [0.4.0] - 2026-11-20
 
 ### Added
+- Help > About OP2MissionReader: a window with a banner (`assets/banner.png`), the version, what the program does and
+  the GitHub link.
 - `setup::from_parts` draws a running game's state from plain parts (`StateParts`: tiles, players, objects), so a
   saved game (OP2Imager) and a harness state (`from_state`, which now reads into those parts) take one path.
   `setup::type_name` gives a map id's code name, `setup::is_weapon_fire` tells a weapon's fire from a unit.
 
 ### Changed
-- The project is named OP2MissionReader: the window title and `--help` say so. The program is still `op2dll`.
-- op2-formats 0.6 (crates.io), was 0.4. op2-rs's crates still use 0.4, so both are built.
+- The project is named OP2MissionReader: every window's title, error dialogs and `--help` say so. The program is still `op2dll`.
+- op2-formats 0.6 (crates.io), was 0.4. op2-rs's crates still use 0.4, so both are built, each with its own game
+  folder setting: `setup::use_game_dir` sets both, and a program using the library calls it once it has the folder.
+  Without it op2-rs's mission host finds no game files and runs the setup with no simulation: no dozed ground under
+  structures, no tubes they lay, beacons as dots.
 
 ## [0.3.0] - 2026-11-20
 

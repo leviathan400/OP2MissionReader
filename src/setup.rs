@@ -208,6 +208,14 @@ pub struct Setup {
     pub tech_names: std::collections::BTreeMap<i32, String>,
 }
 
+/// Uses `dir` as the game folder for the rest of the process, in our op2-formats and in op2-rs's (an older copy, with
+/// its own setting). The mission host finds the map, sheets and tech tree through op2-rs's; without them it runs the
+/// setup with no simulation, so structures don't doze their ground or lay their tubes and beacons have no art.
+pub fn use_game_dir(dir: &Path) {
+    op2_formats::set_game_dir(dir.to_path_buf());
+    op2_formats_host::set_game_dir(dir.to_path_buf());
+}
+
 /// Loads the mission and runs its setup. An error is a DLL that couldn't be loaded; a setup that stops part-way is
 /// `Setup::failed`, with what it created up to there.
 pub fn run(path: &Path, start: StartOptions) -> Result<Setup> {

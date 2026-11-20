@@ -81,7 +81,7 @@ fn main() -> ExitCode {
             eprintln!("op2dll: {e:#}");
             if !console {
                 // Started from Explorer or a shortcut: nobody would see the message otherwise.
-                rfd::MessageDialog::new().set_title("op2dll").set_description(format!("{e:#}")).set_level(rfd::MessageLevel::Error).show();
+                rfd::MessageDialog::new().set_title("OP2MissionReader").set_description(format!("{e:#}")).set_level(rfd::MessageLevel::Error).show();
             }
             ExitCode::FAILURE
         }
@@ -280,7 +280,10 @@ fn run() -> Result<ExitCode> {
     };
     // The game folder only matters for maps (and bare DLL names), so a missing one is a warning.
     let game_dir = match op2_formats::install::use_for_tool(args.game_dir.clone(), op2_settings::Settings::load().game_dir) {
-        Ok(d) => Some(d),
+        Ok(d) => {
+            setup::use_game_dir(&d);
+            Some(d)
+        }
         Err(e) => {
             eprintln!("warning: {e}");
             None

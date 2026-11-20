@@ -3,3 +3,4 @@ target
 *.jpg
 *.map
 .cargo
+!assets/*.png

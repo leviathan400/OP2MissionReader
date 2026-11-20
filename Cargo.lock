@@ -2485,6 +2485,7 @@ dependencies = [
  "eframe",
  "iced-x86",
  "image",
+ "op2-formats 0.4.0",
  "op2-formats 0.6.0",
  "op2-missionhost",
  "op2-settings",
