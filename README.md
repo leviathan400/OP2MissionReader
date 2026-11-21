@@ -1,5 +1,8 @@
 # OP2MissionReader
 
+![OP2MissionReader with Eden Mission 8 open: the map with the setup's units and structures, and the Objectives and
+triggers, Messages, and Disasters and timers windows](docs/screenshot.webp)
+
 OP2MissionReader (the program is `op2dll`) opens an Outpost 2 mission DLL, checks that it is one, and shows its
 details, its map and the objects its setup creates: units, structures, walls and tubes, mining beacons, magma vents
 and fumaroles, drawn with the game's own art.
